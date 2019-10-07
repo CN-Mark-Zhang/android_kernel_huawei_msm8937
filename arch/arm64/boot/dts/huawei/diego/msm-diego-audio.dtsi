@@ -1,0 +1,6 @@
+&soc {
+	int_codec: sound {
+		status = "okay";
+	};
+};
+

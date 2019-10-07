@@ -1,0 +1,33 @@
+&int_codec {
+	/delete-property/ qcom,cdc-us-euro-gpios;
+
+	qcom,msm-gpios =
+		"pri_i2s",
+		"us_eu_gpio",
+		"quin_i2s";
+	qcom,pinctrl-names =
+		"all_off",
+		"pri_i2s_act",
+		"us_eu_gpio_act",
+		"pri_i2s_us_eu_gpio_act",
+		"quin_act",
+		"quin_pri_i2s_act",
+		"quin_us_eu_gpio_act",
+		"quin_us_eu_gpio_pri_i2s_act";
+	pinctrl-names =
+		"all_off",
+		"pri_i2s_act",
+		"us_eu_gpio_act",
+		"pri_i2s_us_eu_gpio_act",
+		"quin_act",
+		"quin_pri_i2s_act",
+		"quin_us_eu_gpio_act",
+		"quin_us_eu_gpio_pri_i2s_act";
+	pinctrl-0 = <&cdc_pdm_lines_sus
+			&cdc_pdm_lines_2_sus &cross_conn_det_sus
+			&pri_tlmm_lines_sus &pri_tlmm_ws_sus>;
+	pinctrl-1 = <&cdc_pdm_lines_act
+			&cdc_pdm_lines_2_act &cross_conn_det_sus
+			&pri_tlmm_lines_sus &pri_tlmm_ws_sus>;
+};
+
