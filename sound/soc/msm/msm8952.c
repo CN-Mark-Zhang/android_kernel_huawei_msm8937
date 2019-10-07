@@ -83,6 +83,9 @@ static int mi2s_tx_sample_rate = SAMPLING_RATE_48KHZ;
 
 static atomic_t quat_mi2s_clk_ref;
 static atomic_t quin_mi2s_clk_ref;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+static atomic_t quin_mi2s_clk_smartpa;
+#endif
 static atomic_t auxpcm_mi2s_clk_ref;
 
 static int headset_gpio;
@@ -99,6 +102,9 @@ static int msm8952_mclk_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event);
 static int msm8952_wsa_switch_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event);
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+extern int msm_q6_quin_mi2s_clocks(bool enable);
+#endif
 
 /*
  * Android L spec
@@ -174,7 +180,11 @@ static struct afe_clk_set mi2s_rx_clk = {
 static struct afe_clk_set wsa_ana_clk = {
 	AFE_API_VERSION_I2S_CONFIG,
 	Q6AFE_LPASS_CLK_ID_MCLK_1,
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	Q6AFE_LPASS_OSR_CLK_12_P288_MHZ,
+#else
 	Q6AFE_LPASS_OSR_CLK_9_P600_MHZ,
+#endif
 	Q6AFE_LPASS_CLK_ATTRIBUTE_COUPLE_NO,
 	Q6AFE_LPASS_CLK_ROOT_DEFAULT,
 	0,
@@ -428,7 +438,11 @@ static int msm_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+static __maybe_unused int msm_senary_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+#else
 static int msm_senary_tx_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+#endif
 				struct snd_pcm_hw_params *params)
 {
 	struct snd_interval *rate = hw_param_interval(params,
@@ -1800,7 +1814,11 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 		return NULL;
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(msm8952_wcd_cal)->X) = (Y))
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	S(v_hs_max, 1700);
+#else
 	S(v_hs_max, 1600);
+#endif
 #undef S
 #define S(X, Y) ((WCD_MBHC_CAL_BTN_DET_PTR(msm8952_wcd_cal)->X) = (Y))
 	S(num_btn, WCD_MBHC_DEF_BUTTONS);
@@ -1823,6 +1841,19 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	 * 210-290 == Button 2
 	 * 360-680 == Button 3
 	 */
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	btn_low[0] = 87;
+	btn_high[0] = 87;
+	btn_low[1] = 120;
+	btn_high[1] = 120;
+	btn_low[2] = 210;
+	btn_high[2] = 215;
+	btn_low[3] = 375;
+	btn_high[3] = 400;
+	/*do not support button 4, so modify value*/
+	btn_low[4] = 410;
+	btn_high[4] = 410;
+#else
 	btn_low[0] = 25;
 	btn_high[0] = 75;
 	btn_low[1] = 200;
@@ -1833,6 +1864,7 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 	btn_high[3] = 510;
 	btn_low[4] = 530;
 	btn_high[4] = 540;
+#endif
 
 	return msm8952_wcd_cal;
 }
@@ -2893,8 +2925,13 @@ static struct snd_soc_dai_link msm8952_hdmi_dba_dai_link[] = {
 		.stream_name = "Quinary MI2S Playback",
 		.cpu_dai_name = "msm-dai-q6-mi2s.5",
 		.platform_name = "msm-pcm-routing",
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+		.codec_dai_name = "tfa98xx_codec",
+		.codec_name = "tfa98xx.5-0034",
+#else
 		.codec_dai_name = "msm_hdmi_dba_codec_rx_dai",
 		.codec_name = "msm-hdmi-dba-codec-rx",
+#endif
 		.no_pcm = 1,
 		.dpcm_playback = 1,
 		.be_id = MSM_BACKEND_DAI_QUINARY_MI2S_RX,
@@ -3554,6 +3591,9 @@ parse_mclk_freq:
 	atomic_set(&quat_mi2s_clk_ref, 0);
 	atomic_set(&quin_mi2s_clk_ref, 0);
 	atomic_set(&auxpcm_mi2s_clk_ref, 0);
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	atomic_set(&quin_mi2s_clk_smartpa, 0);
+#endif
 
 	ret = snd_soc_of_parse_audio_routing(card,
 			"qcom,audio-routing");
@@ -3591,6 +3631,9 @@ err:
 	}
 err1:
 	devm_kfree(&pdev->dev, pdata);
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	snd_soc_card_set_drvdata(card, NULL);
+#endif
 	return ret;
 }
 
@@ -3637,15 +3680,124 @@ static struct platform_driver msm8952_asoc_machine_driver = {
 	.remove = msm8952_asoc_machine_remove,
 };
 
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+#define LPASS_CSR_GP_IO_MUX_QUI_CTL 0x0c052000
+static int conf_int_codec_mux_quin(void){
+	int ret = 0;
+	int val = 0;
+	void __iomem *vaddr = NULL;
+
+	vaddr = ioremap(LPASS_CSR_GP_IO_MUX_QUI_CTL , 4);
+	if (!vaddr) {		pr_err("%s ioremap failure for addr %x",
+		__func__, LPASS_CSR_GP_IO_MUX_QUI_CTL);
+	return -ENOMEM;	}
+	/* enable quin MI2S interface to TLMM GPIO */
+	val = ioread32(vaddr);
+	val = val | 0x00000001;
+	pr_debug("%s: quin mux val = %x\n", __func__, val);
+	iowrite32(val, vaddr);
+	iounmap(vaddr);
+	return ret;
+}
+
+
+static ssize_t SmartPa_Ctlt_show(struct device_driver *driver, char *buf)
+{
+	return sprintf(buf,"%s\n","this is extern smart PA ctl");
+}
+
+static ssize_t SmartPa_Ctl_store(struct device_driver *driver, const char *buf, size_t count)
+{
+	int SmartPa_Ctl=0;
+	int ret=0;
+	SmartPa_Ctl = simple_strtol(buf,NULL,10);
+	if(SmartPa_Ctl){
+		 if (atomic_inc_return(&quin_mi2s_clk_smartpa)==1)
+		 {
+		 pr_err("%s: enable clk quin_mi2s_clk_smartpa= %d\n", __func__,atomic_read(&quin_mi2s_clk_smartpa));
+		 conf_int_codec_mux_quin();
+		 mi2s_rx_clk.enable = true;
+		 mi2s_rx_clk.clk_id =Q6AFE_LPASS_CLK_ID_QUI_MI2S_IBIT;
+		 mi2s_rx_clk.clk_freq_in_hz =Q6AFE_LPASS_IBIT_CLK_1_P536_MHZ;
+		 ret = afe_set_lpass_clock_v2(AFE_PORT_ID_QUINARY_MI2S_RX,&mi2s_rx_clk);
+		 if (ret < 0) {
+			pr_err("failed to enable sclk\n");
+
+		}
+		ret = msm_gpioset_activate(CLIENT_WCD_INT, "quin_i2s");
+		if (ret < 0) {
+			pr_err("failed to enable codec gpios\n");
+
+		}
+		  ret = msm_q6_quin_mi2s_clocks(1);
+		if (ret < 0){
+			pr_err("%s: set fmt cpu dai failed\n", __func__);
+
+			}
+		 }else{
+			pr_err("%s: can bot enable clk quin_mi2s_clk_smartpa= %d\n", __func__,atomic_read(&quin_mi2s_clk_smartpa));
+		 }
+	}else{
+		if(atomic_read(&quin_mi2s_clk_smartpa)>0){
+			pr_err("%s:  close clk quin_mi2s_clk_smartpa %d\n", __func__,atomic_read(&quin_mi2s_clk_smartpa));
+			 atomic_dec_return(&quin_mi2s_clk_smartpa);
+			ret = msm_gpioset_suspend(CLIENT_WCD_INT, "quin_i2s");
+			if (ret < 0) {
+				pr_err("failed to disable codec gpios\n");
+
+			}
+			mi2s_rx_clk.enable = false;
+			mi2s_rx_clk.clk_id =Q6AFE_LPASS_CLK_ID_QUI_MI2S_IBIT;
+			ret = afe_set_lpass_clock_v2(AFE_PORT_ID_QUINARY_MI2S_RX,&mi2s_rx_clk);
+			if (ret < 0) {
+				pr_err("failed to enable sclk\n");
+
+	}
+			ret = msm_q6_quin_mi2s_clocks(0);
+			if (ret < 0){
+				pr_err("%s: msm_q6_quin_mi2s_clocks failed\n", __func__);
+
+			}
+			}
+	}
+
+	return count;
+}
+
+static DRIVER_ATTR(SmartPa_Ctl,(S_IRUSR | S_IWUSR |S_IRGRP  |S_IROTH ),SmartPa_Ctlt_show,SmartPa_Ctl_store);
+#endif
+
 static int __init msm8952_machine_init(void)
 {
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	int ret=0;
+	ret=platform_driver_register(&msm8952_asoc_machine_driver);
+		if(ret<0){
+		pr_err("%s:platform_driver_register  msm8952_asoc_machine_driver failed \n",__func__);
+		return ret;
+	}
+
+	ret=driver_create_file(&msm8952_asoc_machine_driver.driver,&driver_attr_SmartPa_Ctl);
+	if(ret<0){
+		pr_err("%s:driver_create_file Speaker_Ctl failed \n",__func__);
+		return ret;
+	}
+	return ret;
+#else
 	return platform_driver_register(&msm8952_asoc_machine_driver);
+#endif
 }
 late_initcall(msm8952_machine_init);
 
 static void __exit msm8952_machine_exit(void)
 {
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	platform_driver_unregister(&msm8952_asoc_machine_driver);
+	driver_remove_file(&msm8952_asoc_machine_driver.driver,&driver_attr_SmartPa_Ctl);
+	return;
+#else
 	return platform_driver_unregister(&msm8952_asoc_machine_driver);
+#endif
 }
 module_exit(msm8952_machine_exit);
 
