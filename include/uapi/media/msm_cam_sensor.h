@@ -48,6 +48,12 @@
 #define MSM_V4L2_PIX_FMT_SRGGB14 v4l2_fourcc('R', 'G', '1', '4')
 	/* 14  RGRG.. GBGB.. */
 
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+#define MAX_OIS_REGSEQ_NUM 64
+#define MAX_SUPPORT_SENSOR_COUNT 2
+#define APP_INFO_MAX_LINE_LEN 128
+#endif
+
 enum flash_type {
 	LED_FLASH = 1,
 	STROBE_FLASH,
@@ -263,6 +269,11 @@ enum eeprom_cfg_type_t {
 	CFG_EEPROM_WRITE_DATA,
 	CFG_EEPROM_GET_MM_INFO,
 	CFG_EEPROM_INIT,
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	CFG_EEPROM_WRITE_BYTE,
+	CFG_EEPROM_READ_BYTE,
+	CFG_EEPROM_FRESH_MEM_DATA,
+#endif
 };
 
 struct eeprom_get_t {
@@ -272,11 +283,17 @@ struct eeprom_get_t {
 struct eeprom_read_t {
 	uint8_t *dbuffer;
 	uint32_t num_bytes;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint16_t addr;
+#endif
 };
 
 struct eeprom_write_t {
 	uint8_t *dbuffer;
 	uint32_t num_bytes;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint16_t addr;
+#endif
 };
 
 struct eeprom_get_cmm_t {
@@ -345,6 +362,14 @@ enum msm_sensor_cfg_type_t {
 	CFG_WRITE_I2C_ARRAY_ASYNC,
 	CFG_WRITE_I2C_ARRAY_SYNC,
 	CFG_WRITE_I2C_ARRAY_SYNC_BLOCK,
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	/* optimize camera print mipi packet and frame count log*/
+	CFG_START_FRM_CNT,
+	CFG_STOP_FRM_CNT,
+	CFG_GET_OTP_FLAG,
+	CFG_SET_AFC_OTP_INFO,
+	CFG_SET_AWB_OTP_INFO,
+#endif
 };
 
 enum msm_actuator_cfg_type_t {
@@ -371,6 +396,9 @@ enum msm_ois_cfg_type_t {
 	CFG_OIS_POWERUP,
 	CFG_OIS_CONTROL,
 	CFG_OIS_I2C_WRITE_SEQ_TABLE,
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	CFG_OIS_FLASH_WP_ENABLE,
+#endif
 };
 
 enum msm_ois_cfg_download_type_t {
@@ -381,12 +409,19 @@ enum msm_ois_cfg_download_type_t {
 enum msm_ois_i2c_operation {
 	MSM_OIS_WRITE = 0,
 	MSM_OIS_POLL,
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	MSM_OIS_READ,
+#endif
 };
 
 struct reg_settings_ois_t {
 	uint16_t reg_addr;
 	enum msm_camera_i2c_reg_addr_type addr_type;
 	uint32_t reg_data;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint32_t seq_size;
+	uint8_t reg_seq[MAX_OIS_REGSEQ_NUM];
+#endif
 	enum msm_camera_i2c_data_type data_type;
 	enum msm_ois_i2c_operation i2c_operation;
 	uint32_t delay;
@@ -400,6 +435,9 @@ struct msm_ois_params_t {
 	enum msm_camera_i2c_reg_addr_type i2c_addr_type;
 	enum msm_camera_i2c_data_type i2c_data_type;
 	struct reg_settings_ois_t *settings;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint16_t flash_wp_enable;
+#endif
 };
 
 struct msm_ois_set_info_t {
@@ -551,6 +589,9 @@ enum msm_sensor_init_cfg_type_t {
 	CFG_SINIT_PROBE,
 	CFG_SINIT_PROBE_DONE,
 	CFG_SINIT_PROBE_WAIT_DONE,
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	CFG_SINIT_GET_PRODUCT_NAME,
+#endif
 };
 
 struct sensor_init_cfg_data {
@@ -561,6 +602,37 @@ struct sensor_init_cfg_data {
 		void *setting;
 	} cfg;
 };
+
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+struct msm_sensor_afc_otp_info
+{
+	uint16_t starting_dac;
+	uint16_t infinity_dac;
+	uint16_t macro_dac;
+};
+
+struct msm_sensor_vendor_otp_info
+{
+	uint8_t vendor_id;
+};
+
+struct msm_sensor_awb_otp_info
+{
+	uint16_t RG;
+	uint16_t BG;
+	uint32_t typical_RG;
+	uint32_t typical_BG;
+};
+
+struct msm_sensor_mmi_otp_flag
+{
+	uint16_t mmi_otp_check_flag;
+};
+
+struct msm_support_product_name_info {
+      char product_name_info[MAX_SUPPORT_SENSOR_COUNT][APP_INFO_MAX_LINE_LEN];
+};
+#endif
 
 #define VIDIOC_MSM_SENSOR_CFG \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 1, struct sensorb_cfg_data)

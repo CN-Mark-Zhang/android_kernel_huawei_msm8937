@@ -15,6 +15,12 @@ ifeq ($(CONFIG_MACH_XIAOMI_SANTONI),y)
 obj-$(CONFIG_MSMB_CAMERA) += camera_v2-santoni/
 endif
 endif
+else ifeq ($(CONFIG_MACH_HUAWEI),y)
+ifeq ($(CONFIG_MACH_HUAWEI_MSM8940),y)
+ifeq ($(CONFIG_MACH_HUAWEI_DIEGO),y)
+obj-$(CONFIG_MSMB_CAMERA) += camera_v2-diego/
+endif
+endif
 else
 obj-$(CONFIG_MSMB_CAMERA) += camera_v2/
 endif

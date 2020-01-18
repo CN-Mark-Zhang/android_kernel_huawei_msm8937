@@ -44,7 +44,9 @@ struct msm_camera_sensor_slave_info32 {
 	uint8_t  is_init_params_valid;
 	struct msm_sensor_init_params sensor_init_params;
 	enum msm_sensor_output_format_t output_format;
-#ifndef CONFIG_MACH_XIAOMI_SANTONI
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	compat_uptr_t cam_id_info;
+#else
 	uint8_t bypass_video_node_creation;
 #endif
 };
@@ -92,11 +94,17 @@ struct msm_ir_cut_cfg_data_t32 {
 struct eeprom_read_t32 {
 	compat_uptr_t dbuffer;
 	uint32_t num_bytes;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint16_t addr;
+#endif
 };
 
 struct eeprom_write_t32 {
 	compat_uptr_t dbuffer;
 	uint32_t num_bytes;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint16_t addr;
+#endif
 };
 
 struct msm_eeprom_info_t32 {
@@ -220,6 +228,9 @@ struct msm_ois_params_t32 {
 	enum msm_camera_i2c_reg_addr_type i2c_addr_type;
 	enum msm_camera_i2c_data_type i2c_data_type;
 	compat_uptr_t settings;
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	uint16_t flash_wp_enable;
+#endif
 };
 
 struct msm_ois_set_info_t32 {

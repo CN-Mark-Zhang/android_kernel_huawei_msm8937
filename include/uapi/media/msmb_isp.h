@@ -331,7 +331,11 @@ struct msm_vfe_axi_stream_request_cmd {
 	uint32_t controllable_output;
 	uint32_t burst_len;
 	/* Flag indicating memory input stream */
+#ifdef CONFIG_MACH_HUAWEI_DIEGO
+	enum msm_stream_memory_input_t memory_input;
+#else
 	enum msm_stream_rdi_input_type rdi_input_type;
+#endif
 };
 
 struct msm_vfe32_axi_stream_request_cmd {
@@ -507,7 +511,9 @@ enum msm_vfe_reg_cfg_type {
 	VFE_HW_UPDATE_UNLOCK,
 	SET_WM_UB_SIZE,
 	SET_UB_POLICY,
+#ifndef CONFIG_MACH_HUAWEI_DIEGO
 	GET_VFE_HW_LIMIT,
+#endif
 };
 
 struct msm_vfe_cfg_cmd2 {
