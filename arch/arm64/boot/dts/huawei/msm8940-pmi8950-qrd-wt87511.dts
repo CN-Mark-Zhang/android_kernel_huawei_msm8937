@@ -31,6 +31,7 @@
 #include "diego/msm-diego-audio.dtsi"
 #include "diego/msm-diego-pmi8950.dtsi"
 #include "diego/msm8937-diego-audio.dtsi"
+#include "diego/msm8937-diego-camera-sensor-qrd.dtsi"
 #include "diego/msm8937-diego-pinctrl.dtsi"
 #include "diego/msm8937-diego-qrd.dtsi"
 #include "diego/msm8937-diego-regulator.dtsi"
@@ -217,8 +218,8 @@ fpc1020 {
 	};
 };
 &i2c_2  { /* i2c 6 */
-	et6326@30 { /*blink */
-		compatible = "awinc,et6326";
+	aw2013@30 { /*blink */
+		compatible = "awinc,aw2013";
 		reg = <0x30>;
 		rgb_led-supply = <&pm8937_l10>;
 		

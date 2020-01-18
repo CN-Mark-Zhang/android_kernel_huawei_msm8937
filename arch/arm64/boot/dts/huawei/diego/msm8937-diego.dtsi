@@ -4,10 +4,10 @@
 			reg = <0x0 0x83100000 0x0 0x3700000>;
 		};
 
-		ramoops_mem: ramoops_region@0 {
+		pstore_reserve_mem: pstore_reserve_mem_region@0 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x8d000000 0x0 0x80000>;
+			reg = <0x0 0x9ff00000 0x0 0x00300000>;
 		};
 	};
 
@@ -17,21 +17,6 @@
 };
 
 &soc {
-	ramoops {
-		compatible = "ramoops";
-		status = "ok";
-
-		/* This is tacked at the end of wcnss_fw_region@0 */
-		android,ramoops-buffer-start = <0x8d000000>;
-		android,ramoops-buffer-size = <0x80000>;
-		android,ramoops-console-size = <0x40000>;
-		android,ramoops-pmsg-size = <0x20000>;
-		android,ramoops-record-size = <0x5000>;
-		android,ramoops-ftrace-size = <0x15000>;
-		android,ramoops-dump-oops = <0x1>;
-		linux,contiguous-region = <&ramoops_mem>;
-	};
-
 	qcom,sensor-information {
 		sensor_information17: qcom,sensor-information-17 {
 			qcom,sensor-type = "adc";
